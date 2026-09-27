@@ -1,0 +1,19 @@
+{
+  "name": "audience-light",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-27",
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "AUDIENCE_ROOM",
+        "class_name": "AudienceRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["AudienceRoom"]
+    }
+  ]
+}
