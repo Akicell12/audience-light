@@ -787,13 +787,11 @@
     }
 
 
-    /*
-     * =========================
-     * 初期状態
-     * =========================
-     */
-
-    clearLight();
+joinScreen.classList.remove("hidden");
+waiting.classList.add("hidden");
+light.classList.add("hidden");
+light.classList.remove("blink");
+light.style.backgroundColor = "#000";
 
 
 </script>
