@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1.0">
+
+<title>Audience Light Console</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+
+    margin: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background: #111;
+    color: #fff;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+}
+
+body {
+
+    padding: 20px;
+
+}
+
+h1 {
+
+    margin: 0 0 25px;
+
+    font-size: 24px;
+
+}
+
+.section {
+
+    margin-bottom: 25px;
+
+}
+
+label {
+
+    display: block;
+
+    margin-bottom: 8px;
+
+    font-size: 13px;
+
+    opacity: .6;
+
+}
+
+input {
+
+    width: 100%;
+
+    height: 48px;
+
+    padding: 0 14px;
+
+    border: 1px solid #444;
+
+    border-radius: 8px;
+
+    background: #222;
+
+    color: #fff;
+
+    font-size: 16px;
+
+}
+
+button {
+
+    border: 0;
+
+    border-radius: 8px;
+
+    height: 50px;
+
+    padding: 0 20px;
+
+    font-size: 16px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+}
+
+#connectButton {
+
+    width: 100%;
+
+    margin-top: 10px;
+
+    background: #fff;
+
+    color: #000;
+
+}
+
+.status {
+
+    padding: 15px;
+
+    border-radius: 8px;
+
+    background: #222;
+
+}
+
+#statusText {
+
+    font-weight: 600;
+
+}
+
+#count {
+
+    margin-top: 8px;
+
+    font-size: 32px;
+
+}
+
+.controls {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 10px;
+
+}
+
+.color {
+
+    color: #fff;
+
+}
+
+#red {
+
+    background: #e53935;
+
+}
+
+#blue {
+
+    background: #1976d2;
+
+}
+
+#white {
+
+    background: #fff;
+
+    color: #000;
+
+}
+
+#blink {
+
+    background: #555;
+
+}
+
+#clear {
+
+    background: #222;
+
+    border: 1px solid #555;
+
+}
+
+.log {
+
+    height: 150px;
+
+    overflow-y: auto;
+
+    padding: 10px;
+
+    background: #000;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+
+    color: #aaa;
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<h1>Audience Light Console</h1>
+
+
+<div class="section">
+
+<label>ルーム</label>
+
+<input
+    id="roomInput"
+    value="TEST"
+    placeholder="例：TEST"
+>
+
+<button id="connectButton">
+    接続
+</button>
+
+</div>
+
+
+<div class="section status">
+
+<div id="statusText">
+    🔴 未接続
+</div>
+
+<div id="count">
+    0台
+</div>
+
+</div>
+
+
+<div class="section">
+
+<label>演出</label>
+
+<div class="controls">
+
+<button
+    id="red"
+    class="color">
+    赤
+</button>
+
+<button
+    id="blue"
+    class="color">
+    青
+</button>
+
+<button
+    id="white"
+    class="color">
+    白
+</button>
+
+<button
+    id="blink">
+    点滅
+</button>
+
+<button
+    id="clear">
+    消灯
+</button>
+
+</div>
+
+</div>
+
+
+<div class="section">
+
+<label>ログ</label>
+
+<div id="log"
+     class="log">
+</div>
+
+</div>
+
+
+<script>
+
+
+/*
+ * Worker URL
+ */
+
+const WORKER_URL =
+    "https://audience-light.akito-i0828.workers.dev/";
+
+
+/*
+ * HTML
+ */
+
+const roomInput =
+    document.getElementById(
+        "roomInput"
+    );
+
+const connectButton =
+    document.getElementById(
+        "connectButton"
+    );
+
+const statusText =
+    document.getElementById(
+        "statusText"
+    );
+
+const count =
+    document.getElementById(
+        "count"
+    );
+
+const log =
+    document.getElementById(
+        "log"
+    );
+
+
+/*
+ * WebSocket
+ */
+
+let socket = null;
+
+
+/*
+ * ログ
+ */
+
+function addLog(text) {
+
+    const time =
+        new Date()
+            .toLocaleTimeString();
+
+    log.innerHTML +=
+        `[${time}] ${text}<br>`;
+
+    log.scrollTop =
+        log.scrollHeight;
+}
+
+
+/*
+ * 接続
+ */
+
+function connect() {
+
+    const room =
+        roomInput.value.trim();
+
+    if (!room) {
+
+        alert(
+            "ルーム名を入力してください"
+        );
+
+        return;
+    }
+
+
+    if (socket) {
+
+        socket.close();
+
+    }
+
+
+    const wsUrl =
+        WORKER_URL
+            .replace(/^http/, "ws")
+        + "/room/"
+        + encodeURIComponent(room);
+
+
+    statusText.textContent =
+        "🟡 接続中...";
+
+
+    addLog(
+        `接続開始：${room}`
+    );
+
+
+    socket =
+        new WebSocket(wsUrl);
+
+
+    /*
+     * 接続成功
+     */
+
+    socket.onopen = () => {
+
+        statusText.textContent =
+            "🟢 接続中";
+
+        addLog(
+            "WebSocket接続成功"
+        );
+
+    };
+
+
+    /*
+     * メッセージ
+     */
+
+    socket.onmessage = (event) => {
+
+        try {
+
+            const data =
+                JSON.parse(event.data);
+
+
+            /*
+             * 接続人数
+             */
+
+            if (
+                data.type === "count"
+            ) {
+
+                count.textContent =
+                    `${data.count}台`;
+
+                addLog(
+                    `接続人数：${data.count}台`
+                );
+
+                return;
+            }
+
+
+            /*
+             * その他
+             */
+
+            addLog(
+                `受信：${event.data}`
+            );
+
+        } catch (error) {
+
+            addLog(
+                `受信：${event.data}`
+            );
+
+        }
+
+    };
+
+
+    /*
+     * 切断
+     */
+
+    socket.onclose = () => {
+
+        statusText.textContent =
+            "🔴 切断";
+
+        addLog(
+            "WebSocket切断"
+        );
+
+        count.textContent =
+            "0台";
+
+    };
+
+
+    /*
+     * エラー
+     */
+
+    socket.onerror = () => {
+
+        statusText.textContent =
+            "🔴 接続エラー";
+
+        addLog(
+            "WebSocketエラー"
+        );
+
+    };
+
+}
+
+
+/*
+ * 接続ボタン
+ */
+
+connectButton.onclick =
+    connect;
+
+
+/*
+ * コマンド送信
+ */
+
+function sendCommand(command) {
+
+    if (
+        !socket ||
+        socket.readyState !== WebSocket.OPEN
+    ) {
+
+        alert(
+            "先に接続してください"
+        );
+
+        return;
+    }
+
+
+    socket.send(
+        JSON.stringify(command)
+    );
+
+
+    addLog(
+        `送信：${JSON.stringify(command)}`
+    );
+
+}
+
+
+/*
+ * 赤
+ */
+
+document
+    .getElementById("red")
+    .onclick = () => {
+
+        sendCommand({
+            type: "color",
+            color: "#ff0000"
+        });
+
+    };
+
+
+/*
+ * 青
+ */
+
+document
+    .getElementById("blue")
+    .onclick = () => {
+
+        sendCommand({
+            type: "color",
+            color: "#0000ff"
+        });
+
+    };
+
+
+/*
+ * 白
+ */
+
+document
+    .getElementById("white")
+    .onclick = () => {
+
+        sendCommand({
+            type: "color",
+            color: "#ffffff"
+        });
+
+    };
+
+
+/*
+ * 点滅
+ */
+
+document
+    .getElementById("blink")
+    .onclick = () => {
+
+        sendCommand({
+            type: "blink"
+        });
+
+    };
+
+
+/*
+ * 消灯
+ */
+
+document
+    .getElementById("clear")
+    .onclick = () => {
+
+        sendCommand({
+            type: "clear"
+        });
+
+    };
+
+
+</script>
+
+</body>
+
+</html>
