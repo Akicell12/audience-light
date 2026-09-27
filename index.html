@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width,
+                   initial-scale=1.0,
+                   maximum-scale=1.0,
+                   user-scalable=no">
+
+    <meta name="theme-color" content="#000000">
+
+    <title>Audience Light</title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+
+        html,
+        body {
+
+            margin: 0;
+
+            width: 100%;
+            height: 100%;
+
+            overflow: hidden;
+
+            background: #000;
+            color: #fff;
+
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Helvetica Neue",
+                Arial,
+                sans-serif;
+        }
+
+
+        body {
+
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+
+        /* =========================
+           共通
+        ========================= */
+
+        .screen {
+
+            position: fixed;
+
+            inset: 0;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            text-align: center;
+        }
+
+
+        .hidden {
+
+            display: none !important;
+        }
+
+
+        /* =========================
+           参加画面
+        ========================= */
+
+        #joinScreen {
+
+            flex-direction: column;
+
+            padding: 30px;
+        }
+
+
+        .logo {
+
+            margin: 0;
+
+            font-size: 30px;
+            font-weight: 700;
+
+            letter-spacing: 0.16em;
+        }
+
+
+        .subtitle {
+
+            margin: 12px 0 42px;
+
+            font-size: 13px;
+
+            letter-spacing: 0.08em;
+
+            opacity: 0.5;
+        }
+
+
+        #joinButton {
+
+            width: min(260px, 80vw);
+
+            height: 62px;
+
+            border: 0;
+
+            border-radius: 16px;
+
+            background: #fff;
+            color: #000;
+
+            font-size: 17px;
+            font-weight: 650;
+
+            cursor: pointer;
+
+            transition:
+                transform 0.15s ease,
+                opacity 0.15s ease;
+        }
+
+
+        #joinButton:active {
+
+            transform: scale(0.96);
+        }
+
+
+        /* =========================
+           待機画面
+        ========================= */
+
+        #waiting {
+
+            flex-direction: column;
+        }
+
+
+        .waiting-dot {
+
+            width: 8px;
+            height: 8px;
+
+            margin-bottom: 22px;
+
+            border-radius: 50%;
+
+            background: #fff;
+
+            animation:
+                waitingPulse 1.4s ease-in-out infinite;
+        }
+
+
+        #waitingText {
+
+            font-size: 16px;
+
+            letter-spacing: 0.12em;
+
+            opacity: 0.65;
+        }
+
+
+        @keyframes waitingPulse {
+
+            0%,
+            100% {
+
+                opacity: 0.25;
+
+                transform: scale(0.8);
+            }
+
+
+            50% {
+
+                opacity: 1;
+
+                transform: scale(1);
+            }
+        }
+
+
+        /* =========================
+           光る画面
+        ========================= */
+
+        #light {
+
+            position: fixed;
+
+            inset: 0;
+
+            background: #000;
+        }
+
+
+        /* =========================
+           点滅
+        ========================= */
+
+        .blink {
+
+            animation:
+                blink 0.5s infinite alternate;
+        }
+
+
+        @keyframes blink {
+
+            from {
+
+                opacity: 1;
+            }
+
+
+            to {
+
+                opacity: 0;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================
+         参加画面
+    ========================= -->
+
+    <section
+        id="joinScreen"
+        class="screen"
+    >
+
+        <h1 class="logo">
+            LIVE LIGHT
+        </h1>
+
+
+        <p class="subtitle">
+            ライブ演出に参加します
+        </p>
+
+
+        <button id="joinButton">
+            参加する
+        </button>
+
+    </section>
+
+
+
+    <!-- =========================
+         待機画面
+    ========================= -->
+
+    <section
+        id="waiting"
+        class="screen hidden"
+    >
+
+        <div class="waiting-dot"></div>
+
+
+        <div id="waitingText">
+            演出待機中
+        </div>
+
+    </section>
+
+
+
+    <!-- =========================
+         光る画面
+    ========================= -->
+
+    <div
+        id="light"
+        class="hidden"
+    ></div>
+
+
+
+<script>
+
+
+    /*
+     * =========================
+     * Cloudflare Worker
+     * =========================
+     *
+     * ここにCloudflare WorkerのURLを入れる
+     *
+     * 例：
+     *
+     * https://audience-light.xxxxx.workers.dev
+     *
+     */
+
+    const WORKER_URL =
+        "https://audience-light.akito-i0828.workers.dev/";
+
+
+    /*
+     * =========================
+     * ルーム
+     * =========================
+     */
+
+    const params =
+        new URLSearchParams(
+            location.search
+        );
+
+
+    const ROOM_ID =
+        params.get("room") || "TEST";
+
+
+    /*
+     * =========================
+     * HTML要素
+     * =========================
+     */
+
+    const joinScreen =
+        document.getElementById(
+            "joinScreen"
+        );
+
+
+    const waiting =
+        document.getElementById(
+            "waiting"
+        );
+
+
+    const light =
+        document.getElementById(
+            "light"
+        );
+
+
+    const joinButton =
+        document.getElementById(
+            "joinButton"
+        );
+
+
+    /*
+     * =========================
+     * Wake Lock
+     * =========================
+     */
+
+    let wakeLock = null;
+
+
+    async function requestWakeLock() {
+
+        if (
+            !("wakeLock" in navigator)
+        ) {
+
+            console.log(
+                "Wake Lock API is not supported."
+            );
+
+            return;
+        }
+
+
+        try {
+
+            wakeLock =
+                await navigator.wakeLock.request(
+                    "screen"
+                );
+
+
+            console.log(
+                "Wake Lock acquired."
+            );
+
+        } catch (error) {
+
+            console.log(
+                "Wake Lock failed:",
+                error
+            );
+
+        }
+
+    }
+
+
+    /*
+     * =========================
+     * 全画面
+     * =========================
+     */
+
+    async function requestFullscreen() {
+
+        try {
+
+            if (
+                document.documentElement
+                    .requestFullscreen
+            ) {
+
+                await document
+                    .documentElement
+                    .requestFullscreen();
+
+            }
+
+        } catch (error) {
+
+            console.log(
+                "Fullscreen failed:",
+                error
+            );
+
+        }
+
+    }
+
+
+    /*
+     * =========================
+     * WebSocket
+     * =========================
+     */
+
+    let socket = null;
+
+
+    function connectWebSocket() {
+
+        /*
+         * Worker URL
+         *
+         * https://
+         * ↓
+         * wss://
+         */
+
+        const workerURL =
+            WORKER_URL
+                .replace(
+                    /^https:\/\//,
+                    "wss://"
+                )
+                .replace(
+                    /^http:\/\//,
+                    "ws://"
+                );
+
+
+        /*
+         * ルームURL
+         *
+         * /room/ルーム名
+         */
+
+        const wsURL =
+            workerURL
+            + "/room/"
+            + encodeURIComponent(
+                ROOM_ID
+            );
+
+
+        console.log(
+            "WebSocket:",
+            wsURL
+        );
+
+
+        socket =
+            new WebSocket(
+                wsURL
+            );
+
+
+        /*
+         * 接続成功
+         */
+
+        socket.addEventListener(
+            "open",
+            () => {
+
+                console.log(
+                    "WebSocket connected."
+                );
+
+            }
+        );
+
+
+        /*
+         * コマンド受信
+         */
+
+        socket.addEventListener(
+            "message",
+            (event) => {
+
+                try {
+
+                    const command =
+                        JSON.parse(
+                            event.data
+                        );
+
+
+                    console.log(
+                        "Command:",
+                        command
+                    );
+
+
+                    /*
+                     * 色
+                     */
+
+                    if (
+                        command.type ===
+                        "color"
+                    ) {
+
+                        setColor(
+                            command.color
+                        );
+
+                    }
+
+
+                    /*
+                     * 点滅
+                     */
+
+                    if (
+                        command.type ===
+                        "blink"
+                    ) {
+
+                        startBlink();
+
+                    }
+
+
+                    /*
+                     * 消灯
+                     */
+
+                    if (
+                        command.type ===
+                        "clear"
+                    ) {
+
+                        clearLight();
+
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        "Command parse error:",
+                        error
+                    );
+
+                }
+
+            }
+        );
+
+
+        /*
+         * 切断
+         */
+
+        socket.addEventListener(
+            "close",
+            () => {
+
+                console.log(
+                    "WebSocket disconnected."
+                );
+
+
+                /*
+                 * 2秒後に再接続
+                 */
+
+                setTimeout(
+                    () => {
+
+                        connectWebSocket();
+
+                    },
+                    2000
+                );
+
+            }
+        );
+
+
+        /*
+         * エラー
+         */
+
+        socket.addEventListener(
+            "error",
+            (error) => {
+
+                console.error(
+                    "WebSocket error:",
+                    error
+                );
+
+            }
+        );
+
+    }
+
+
+    /*
+     * =========================
+     * 参加ボタン
+     * =========================
+     */
+
+    joinButton.addEventListener(
+        "click",
+        async () => {
+
+            await requestFullscreen();
+
+
+            await requestWakeLock();
+
+
+            joinScreen
+                .classList
+                .add("hidden");
+
+
+            waiting
+                .classList
+                .remove("hidden");
+
+
+            connectWebSocket();
+
+        }
+    );
+
+
+    /*
+     * =========================
+     * Wake Lock再取得
+     * =========================
+     */
+
+    document.addEventListener(
+        "visibilitychange",
+        async () => {
+
+            if (
+                document.visibilityState ===
+                "visible"
+            ) {
+
+                await requestWakeLock();
+
+            }
+
+        }
+    );
+
+
+    /*
+     * =========================
+     * 色
+     * =========================
+     */
+
+    function setColor(color) {
+
+        waiting
+            .classList
+            .add("hidden");
+
+
+        light
+            .classList
+            .remove("hidden");
+
+
+        light
+            .classList
+            .remove("blink");
+
+
+        light.style.backgroundColor =
+            color;
+
+    }
+
+
+    /*
+     * =========================
+     * 点滅
+     * =========================
+     */
+
+    function startBlink() {
+
+        waiting
+            .classList
+            .add("hidden");
+
+
+        light
+            .classList
+            .remove("hidden");
+
+
+        light
+            .classList
+            .add("blink");
+
+    }
+
+
+    /*
+     * =========================
+     * 消灯
+     * =========================
+     */
+
+    function clearLight() {
+
+        light
+            .classList
+            .add("hidden");
+
+
+        waiting
+            .classList
+            .remove("hidden");
+
+
+        light
+            .classList
+            .remove("blink");
+
+
+        light.style.backgroundColor =
+            "#000";
+
+    }
+
+
+    /*
+     * =========================
+     * 初期状態
+     * =========================
+     */
+
+    clearLight();
+
+
+</script>
+
+
+</body>
+</html>
