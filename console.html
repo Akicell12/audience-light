@@ -37,173 +37,211 @@ body {
 }
 
 body {
+
     padding: 20px;
+
 }
 
 h1 {
+
     margin: 0 0 25px;
+
     font-size: 24px;
+
 }
 
 .section {
+
     margin-bottom: 25px;
+
 }
 
 label {
+
     display: block;
+
     margin-bottom: 8px;
+
     font-size: 13px;
+
     opacity: .6;
+
 }
 
 input {
+
     width: 100%;
+
     height: 48px;
+
     padding: 0 14px;
+
     border: 1px solid #444;
+
     border-radius: 8px;
+
     background: #222;
+
     color: #fff;
+
     font-size: 16px;
+
 }
 
 button {
+
     border: 0;
+
     border-radius: 8px;
+
     height: 50px;
+
     padding: 0 20px;
+
     font-size: 16px;
+
     font-weight: 600;
+
     cursor: pointer;
+
 }
 
 #connectButton {
+
     width: 100%;
+
     margin-top: 10px;
+
     background: #fff;
+
     color: #000;
+
 }
 
 .status {
+
     padding: 15px;
+
     border-radius: 8px;
+
     background: #222;
+
 }
 
 #statusText {
+
     font-weight: 600;
+
 }
 
 #count {
+
     margin-top: 8px;
+
     font-size: 32px;
+
 }
 
 .controls {
+
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
     gap: 10px;
+
 }
 
 .color {
+
     color: #fff;
+
 }
 
 #red {
-    background: #e53935;
-}
 
-#green {
-    background: #43a047;
+    background: #e53935;
+
 }
 
 #blue {
+
     background: #1976d2;
+
 }
 
 #white {
+
     background: #fff;
+
     color: #000;
+
 }
 
 #blink {
+
     background: #555;
+
 }
 
 #clear {
+
     background: #222;
+
     border: 1px solid #555;
+
 }
-
-
-/* ==========================================
-   MASTER DIMMER
-   ========================================== */
-
-.masterBox {
-    padding: 15px;
-    border-radius: 8px;
-    background: #222;
-}
-
-.masterHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.masterTitle {
-    font-size: 13px;
-    opacity: .6;
-}
-
-#opacityValue {
-    font-size: 24px;
-    font-weight: 700;
-}
-
-#opacitySlider {
-    width: 100%;
-    height: 40px;
-    padding: 0;
-    cursor: pointer;
-    accent-color: #fff;
-}
-
-
-/* ==========================================
-   ログ
-   ========================================== */
 
 .log {
+
     height: 150px;
+
     overflow-y: auto;
+
     padding: 10px;
+
     background: #000;
+
     border-radius: 8px;
+
     font-size: 12px;
+
     color: #aaa;
+
 }
 
 .beatButton {
+
     background: #333;
     color: #fff;
+
     border: 1px solid #555;
+
     height: 50px;
+
 }
+
 
 .beatButton.active {
+
     background: #fff;
     color: #000;
+
 }
 
+
 .savedColor {
+
     width: 100%;
     height: 55px;
+
     border-radius: 8px;
+
     border: 2px solid #555;
+
     cursor: pointer;
+
 }
 
 </style>
@@ -213,12 +251,9 @@ button {
 
 <body>
 
+
 <h1>Audience Light Console</h1>
 
-
-<!-- ==========================================
-     ルーム
-     ========================================== -->
 
 <div class="section">
 
@@ -237,10 +272,6 @@ button {
 </div>
 
 
-<!-- ==========================================
-     ステータス
-     ========================================== -->
-
 <div class="section status">
 
 <div id="statusText">
@@ -253,10 +284,6 @@ button {
 
 </div>
 
-
-<!-- ==========================================
-     演出
-     ========================================== -->
 
 <div class="section">
 
@@ -302,46 +329,6 @@ button {
 
 </div>
 
-
-<!-- ==========================================
-     MASTER DIMMER
-     ========================================== -->
-
-<div class="section">
-
-<label>MASTER</label>
-
-<div class="masterBox">
-
-<div class="masterHeader">
-
-<div class="masterTitle">
-    COLOR OPACITY
-</div>
-
-<div id="opacityValue">
-    100%
-</div>
-
-</div>
-
-<input
-    id="opacitySlider"
-    type="range"
-    min="0"
-    max="100"
-    step="1"
-    value="100"
->
-
-</div>
-
-</div>
-
-
-<!-- ==========================================
-     カラー作成
-     ========================================== -->
 
 <div class="section">
 
@@ -389,10 +376,6 @@ button {
 </div>
 
 
-<!-- ==========================================
-     保存カラー
-     ========================================== -->
-
 <div class="section">
 
 <label>保存カラー</label>
@@ -410,10 +393,6 @@ button {
 
 </div>
 
-
-<!-- ==========================================
-     点滅設定
-     ========================================== -->
 
 <div class="section">
 
@@ -478,18 +457,13 @@ button {
 
 </div>
 
-
-<!-- ==========================================
-     ログ
-     ========================================== -->
-
+      
 <div class="section">
 
 <label>ログ</label>
 
-<div
-    id="log"
-    class="log">
+<div id="log"
+     class="log">
 </div>
 
 </div>
@@ -550,23 +524,6 @@ const saveBlinkButton =
     document.getElementById("saveBlink");
 
 
-/*
- * ==========================================
- * MASTER DIMMER
- * ==========================================
- */
-
-const opacitySlider =
-    document.getElementById(
-        "opacitySlider"
-    );
-
-const opacityValue =
-    document.getElementById(
-        "opacityValue"
-    );
-
-
 const beatButtons =
     document.querySelectorAll(
         ".beatButton"
@@ -594,15 +551,6 @@ let blinkPattern = [
     1,
     0
 ];
-
-
-/*
- * ==========================================
- * MASTER透明度
- * ==========================================
- */
-
-let masterOpacity = 1;
 
 
 /*
@@ -682,7 +630,6 @@ colorPicker.addEventListener(
 
 
 /*
- * ==========================================
  * HEX入力
  * ==========================================
  */
@@ -705,89 +652,6 @@ hexInput.addEventListener(
         }
     }
 );
-
-
-/*
- * ==========================================
- * MASTER DIMMER
- * ==========================================
- */
-
-opacitySlider.addEventListener(
-    "input",
-    () => {
-
-        const percent =
-            Number(
-                opacitySlider.value
-            );
-
-
-        masterOpacity =
-            percent / 100;
-
-
-        opacityValue.textContent =
-            `${percent}%`;
-
-
-        sendCommand({
-            type: "opacity",
-            value: masterOpacity
-        });
-
-    }
-);
-
-
-/*
- * ==========================================
- * MASTER透明度反映
- * ==========================================
- */
-
-function applyOpacity(value) {
-
-    let opacity =
-        Number(value);
-
-
-    if (
-        !Number.isFinite(opacity)
-    ) {
-
-        opacity = 1;
-
-    }
-
-
-    opacity =
-        Math.max(
-            0,
-            Math.min(
-                1,
-                opacity
-            )
-        );
-
-
-    masterOpacity =
-        opacity;
-
-
-    const percent =
-        Math.round(
-            opacity * 100
-        );
-
-
-    opacitySlider.value =
-        percent;
-
-
-    opacityValue.textContent =
-        `${percent}%`;
-}
 
 
 /*
@@ -854,6 +718,10 @@ function connect() {
         );
 
 
+        /*
+         * 設定取得
+         */
+
         sendCommand({
             type: "getSettings"
         });
@@ -900,29 +768,6 @@ function connect() {
 
                 applySettings(
                     data.settings
-                );
-
-                return;
-            }
-
-
-            /*
-             * 他コンソールから
-             * 透明度が変更された場合
-             */
-
-            if (
-                data.type === "opacity"
-            ) {
-
-                applyOpacity(
-                    data.value
-                );
-
-                addLog(
-                    `透明度：${Math.round(
-                        Number(data.value) * 100
-                    )}%`
                 );
 
                 return;
@@ -1095,26 +940,6 @@ function applySettings(settings) {
             renderPattern();
 
         }
-
-    }
-
-
-    /*
-     * MASTER透明度
-     */
-
-    if (
-        settings.opacity !== undefined
-    ) {
-
-        applyOpacity(
-            settings.opacity
-        );
-
-    } else {
-
-        applyOpacity(1);
-
     }
 
 
@@ -1228,24 +1053,6 @@ document
         sendCommand({
             type: "color",
             color: "#ff0000"
-        });
-
-    };
-
-
-/*
- * ==========================================
- * 緑
- * ==========================================
- */
-
-document
-    .getElementById("green")
-    .onclick = () => {
-
-        sendCommand({
-            type: "color",
-            color: "#00ff00"
         });
 
     };
@@ -1448,15 +1255,10 @@ saveBlinkButton.onclick = () => {
 
 
 /*
- * ==========================================
- * 初期状態
- * ==========================================
+ * 初期パターン
  */
 
 renderPattern();
-
-applyOpacity(1);
-
 </script>
 
 </body>
