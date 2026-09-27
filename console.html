@@ -211,6 +211,39 @@ button {
 
 }
 
+.beatButton {
+
+    background: #333;
+    color: #fff;
+
+    border: 1px solid #555;
+
+    height: 50px;
+
+}
+
+
+.beatButton.active {
+
+    background: #fff;
+    color: #000;
+
+}
+
+
+.savedColor {
+
+    width: 100%;
+    height: 55px;
+
+    border-radius: 8px;
+
+    border: 2px solid #555;
+
+    cursor: pointer;
+
+}
+
 </style>
 
 </head>
@@ -293,6 +326,134 @@ button {
 
 <div class="section">
 
+<label>カラー作成</label>
+
+<div style="
+    display:grid;
+    grid-template-columns:80px 1fr;
+    gap:10px;
+">
+
+<input
+    id="colorPicker"
+    type="color"
+    value="#ff0000"
+    style="
+        width:80px;
+        padding:4px;
+        cursor:pointer;
+    "
+>
+
+<input
+    id="hexInput"
+    type="text"
+    value="#ff0000"
+    placeholder="#FF0000"
+>
+
+</div>
+
+
+<button
+    id="saveColor"
+    style="
+        width:100%;
+        margin-top:10px;
+        background:#fff;
+        color:#000;
+    "
+>
+    カラーを保存
+</button>
+
+</div>
+
+
+<div class="section">
+
+<label>保存カラー</label>
+
+<div
+    id="savedColors"
+    style="
+        display:grid;
+        grid-template-columns:
+            repeat(4, 1fr);
+        gap:10px;
+    "
+>
+</div>
+
+</div>
+
+
+<div class="section">
+
+<label>点滅設定</label>
+
+<input
+    id="bpmInput"
+    type="number"
+    min="20"
+    max="300"
+    value="120"
+    placeholder="BPM"
+>
+
+
+<div style="
+    margin-top:10px;
+    display:grid;
+    grid-template-columns:
+        repeat(4, 1fr);
+    gap:8px;
+">
+
+<button
+    class="beatButton"
+    data-beat="0">
+    ●
+</button>
+
+<button
+    class="beatButton"
+    data-beat="1">
+    ○
+</button>
+
+<button
+    class="beatButton"
+    data-beat="2">
+    ●
+</button>
+
+<button
+    class="beatButton"
+    data-beat="3">
+    ○
+</button>
+
+</div>
+
+
+<button
+    id="saveBlink"
+    style="
+        width:100%;
+        margin-top:10px;
+        background:#fff;
+        color:#000;
+    "
+>
+    点滅設定を保存
+</button>
+
+</div>
+
+      
+<div class="section">
+
 <label>ログ</label>
 
 <div id="log"
@@ -306,7 +467,9 @@ button {
 
 
 /*
+ * ==========================================
  * Worker URL
+ * ==========================================
  */
 
 const WORKER_URL =
@@ -314,44 +477,80 @@ const WORKER_URL =
 
 
 /*
+ * ==========================================
  * HTML
+ * ==========================================
  */
 
 const roomInput =
-    document.getElementById(
-        "roomInput"
-    );
+    document.getElementById("roomInput");
 
 const connectButton =
-    document.getElementById(
-        "connectButton"
-    );
+    document.getElementById("connectButton");
 
 const statusText =
-    document.getElementById(
-        "statusText"
-    );
+    document.getElementById("statusText");
 
 const count =
-    document.getElementById(
-        "count"
-    );
+    document.getElementById("count");
 
 const log =
-    document.getElementById(
-        "log"
+    document.getElementById("log");
+
+
+const colorPicker =
+    document.getElementById("colorPicker");
+
+const hexInput =
+    document.getElementById("hexInput");
+
+const saveColorButton =
+    document.getElementById("saveColor");
+
+const savedColors =
+    document.getElementById("savedColors");
+
+
+const bpmInput =
+    document.getElementById("bpmInput");
+
+const saveBlinkButton =
+    document.getElementById("saveBlink");
+
+
+const beatButtons =
+    document.querySelectorAll(
+        ".beatButton"
     );
 
 
 /*
+ * ==========================================
  * WebSocket
+ * ==========================================
  */
 
 let socket = null;
 
 
 /*
+ * ==========================================
+ * 点滅パターン
+ * ==========================================
+ */
+
+let blinkPattern = [
+    1,
+    0,
+    1,
+    0
+];
+
+
+/*
+ * ==========================================
  * ログ
+ * ==========================================
  */
 
 function addLog(text) {
@@ -360,8 +559,10 @@ function addLog(text) {
         new Date()
             .toLocaleTimeString();
 
+
     log.innerHTML +=
         `[${time}] ${text}<br>`;
+
 
     log.scrollTop =
         log.scrollHeight;
@@ -369,13 +570,95 @@ function addLog(text) {
 
 
 /*
+ * ==========================================
+ * HEXチェック
+ * ==========================================
+ */
+
+function normalizeColor(value) {
+
+    let color =
+        String(value)
+            .trim()
+            .toLowerCase();
+
+
+    if (
+        !color.startsWith("#")
+    ) {
+
+        color =
+            "#" + color;
+
+    }
+
+
+    if (
+        !/^#[0-9a-f]{6}$/i.test(color)
+    ) {
+
+        return null;
+    }
+
+
+    return color;
+}
+
+
+/*
+ * ==========================================
+ * カラーピッカー
+ * ==========================================
+ */
+
+colorPicker.addEventListener(
+    "input",
+    () => {
+
+        hexInput.value =
+            colorPicker.value
+                .toLowerCase();
+
+    }
+);
+
+
+/*
+ * HEX入力
+ * ==========================================
+ */
+
+hexInput.addEventListener(
+    "input",
+    () => {
+
+        const color =
+            normalizeColor(
+                hexInput.value
+            );
+
+
+        if (color) {
+
+            colorPicker.value =
+                color;
+
+        }
+    }
+);
+
+
+/*
+ * ==========================================
  * 接続
+ * ==========================================
  */
 
 function connect() {
 
     const room =
         roomInput.value.trim();
+
 
     if (!room) {
 
@@ -423,9 +706,19 @@ function connect() {
         statusText.textContent =
             "🟢 接続中";
 
+
         addLog(
             "WebSocket接続成功"
         );
+
+
+        /*
+         * 設定取得
+         */
+
+        sendCommand({
+            type: "getSettings"
+        });
 
     };
 
@@ -439,7 +732,9 @@ function connect() {
         try {
 
             const data =
-                JSON.parse(event.data);
+                JSON.parse(
+                    event.data
+                );
 
 
             /*
@@ -453,8 +748,20 @@ function connect() {
                 count.textContent =
                     `${data.count}台`;
 
-                addLog(
-                    `接続人数：${data.count}台`
+                return;
+            }
+
+
+            /*
+             * ルーム設定
+             */
+
+            if (
+                data.type === "settings"
+            ) {
+
+                applySettings(
+                    data.settings
                 );
 
                 return;
@@ -489,9 +796,11 @@ function connect() {
         statusText.textContent =
             "🔴 切断";
 
+
         addLog(
             "WebSocket切断"
         );
+
 
         count.textContent =
             "0台";
@@ -508,17 +817,19 @@ function connect() {
         statusText.textContent =
             "🔴 接続エラー";
 
+
         addLog(
             "WebSocketエラー"
         );
 
     };
-
 }
 
 
 /*
+ * ==========================================
  * 接続ボタン
+ * ==========================================
  */
 
 connectButton.onclick =
@@ -526,7 +837,9 @@ connectButton.onclick =
 
 
 /*
+ * ==========================================
  * コマンド送信
+ * ==========================================
  */
 
 function sendCommand(command) {
@@ -552,12 +865,179 @@ function sendCommand(command) {
     addLog(
         `送信：${JSON.stringify(command)}`
     );
-
 }
 
 
 /*
+ * ==========================================
+ * 設定反映
+ * ==========================================
+ */
+
+function applySettings(settings) {
+
+    if (!settings) {
+        return;
+    }
+
+
+    /*
+     * カラー
+     */
+
+    if (
+        Array.isArray(settings.colors)
+    ) {
+
+        renderSavedColors(
+            settings.colors
+        );
+
+    }
+
+
+    /*
+     * 点滅
+     */
+
+    if (
+        settings.blink
+    ) {
+
+        if (
+            Number.isFinite(
+                settings.blink.bpm
+            )
+        ) {
+
+            bpmInput.value =
+                settings.blink.bpm;
+
+        }
+
+
+        if (
+            Array.isArray(
+                settings.blink.pattern
+            )
+        ) {
+
+            blinkPattern =
+                settings.blink.pattern
+                    .slice(0, 16)
+                    .map(
+                        value =>
+                            value ? 1 : 0
+                    );
+
+
+            renderPattern();
+
+        }
+    }
+
+
+    addLog(
+        "ルーム設定を読み込みました"
+    );
+}
+
+
+/*
+ * ==========================================
+ * 保存カラー表示
+ * ==========================================
+ */
+
+function renderSavedColors(colors) {
+
+    savedColors.innerHTML =
+        "";
+
+
+    colors.forEach(
+        color => {
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.className =
+                "savedColor";
+
+
+            button.style.backgroundColor =
+                color;
+
+
+            button.title =
+                color;
+
+
+            button.onclick = () => {
+
+                sendCommand({
+                    type: "color",
+                    color
+                });
+
+            };
+
+
+            savedColors.appendChild(
+                button
+            );
+
+        }
+    );
+}
+
+
+/*
+ * ==========================================
+ * カラー保存
+ * ==========================================
+ */
+
+saveColorButton.onclick = () => {
+
+    const color =
+        normalizeColor(
+            hexInput.value
+        );
+
+
+    if (!color) {
+
+        alert(
+            "HEXカラーを正しく入力してください"
+        );
+
+        return;
+    }
+
+
+    colorPicker.value =
+        color;
+
+
+    hexInput.value =
+        color;
+
+
+    sendCommand({
+        type: "saveColor",
+        color
+    });
+};
+
+
+/*
+ * ==========================================
  * 赤
+ * ==========================================
  */
 
 document
@@ -573,7 +1053,9 @@ document
 
 
 /*
+ * ==========================================
  * 青
+ * ==========================================
  */
 
 document
@@ -589,7 +1071,9 @@ document
 
 
 /*
+ * ==========================================
  * 白
+ * ==========================================
  */
 
 document
@@ -605,22 +1089,34 @@ document
 
 
 /*
+ * ==========================================
  * 点滅
+ * ==========================================
  */
 
 document
     .getElementById("blink")
     .onclick = () => {
 
+        const bpm =
+            Number(
+                bpmInput.value
+            ) || 120;
+
+
         sendCommand({
-            type: "blink"
+            type: "blink",
+            bpm,
+            pattern: blinkPattern
         });
 
     };
 
 
 /*
+ * ==========================================
  * 消灯
+ * ==========================================
  */
 
 document
@@ -634,6 +1130,129 @@ document
     };
 
 
+/*
+ * ==========================================
+ * ビートパターン
+ * ==========================================
+ */
+
+beatButtons.forEach(
+    button => {
+
+        button.onclick = () => {
+
+            const index =
+                Number(
+                    button.dataset.beat
+                );
+
+
+            blinkPattern[index] =
+                blinkPattern[index]
+                    ? 0
+                    : 1;
+
+
+            renderPattern();
+
+        };
+
+    }
+);
+
+
+/*
+ * ==========================================
+ * パターン表示
+ * ==========================================
+ */
+
+function renderPattern() {
+
+    beatButtons.forEach(
+        button => {
+
+            const index =
+                Number(
+                    button.dataset.beat
+                );
+
+
+            if (
+                blinkPattern[index]
+            ) {
+
+                button.classList.add(
+                    "active"
+                );
+
+                button.textContent =
+                    "●";
+
+            } else {
+
+                button.classList.remove(
+                    "active"
+                );
+
+                button.textContent =
+                    "○";
+
+            }
+
+        }
+    );
+}
+
+
+/*
+ * ==========================================
+ * 点滅設定保存
+ * ==========================================
+ */
+
+saveBlinkButton.onclick = () => {
+
+    let bpm =
+        Number(
+            bpmInput.value
+        );
+
+
+    if (!Number.isFinite(bpm)) {
+
+        bpm = 120;
+
+    }
+
+
+    bpm =
+        Math.max(
+            20,
+            Math.min(
+                300,
+                Math.round(bpm)
+            )
+        );
+
+
+    bpmInput.value =
+        bpm;
+
+
+    sendCommand({
+        type: "saveBlink",
+        bpm,
+        pattern: blinkPattern
+    });
+};
+
+
+/*
+ * 初期パターン
+ */
+
+renderPattern();
 </script>
 
 </body>
