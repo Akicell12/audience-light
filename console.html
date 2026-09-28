@@ -165,6 +165,10 @@ button {
 
 }
 
+#green {
+    background: #00c853;
+}
+
 #blue {
 
     background: #1976d2;
@@ -1056,6 +1060,23 @@ document
         });
 
     };
+
+/*
+ * ==========================================
+ * 緑
+ * ==========================================
+ */
+      
+document
+    .getElementById("green")
+    .onclick = () => {
+
+    sendCommand({
+        type: "color",
+        color: "#00ff00"
+    });
+
+};
 
 
 /*
